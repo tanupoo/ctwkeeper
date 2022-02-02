@@ -68,6 +68,19 @@ def member_show(api: WebexTeamsAPI, room_id: str, mail_addr: list) -> None:
         for n in api.memberships.list(room_id):
             print(f"{n.personDisplayName}: {n.personEmail}: {n.id}")
 
+def people_show(api: WebexTeamsAPI, mail_addr: str) -> None:
+    for m in mail_addr:
+        try:
+            ret = api.people.list(email=m)
+        except exceptions.ApiError as e:
+            if "User is already a participant" in str(e):
+                print(f"{m} is already participated.")
+            else:
+                print(str(e))
+        else:
+            for i in ret:
+                print(i)
+
 def main():
     from argparse import ArgumentParser
     from argparse import ArgumentDefaultsHelpFormatter
@@ -90,7 +103,8 @@ def main():
                     help="with the -e option, inform to add members")
     ap.add_argument("--delete-members", "-D", action="store_true",
                     dest="delete_members",
-                    help="with the -e option, inform to delete members")
+                    help="with the --email-addrs option, "
+                        "inform to delete members")
     ap.add_argument("--email-addrs", "-e", action="store", dest="email_addrs",
                     help="specify the member's email addresses "
                     "separated by a comma.")
@@ -99,6 +113,9 @@ def main():
     ap.add_argument("-f", action="append", dest="files", nargs="*",
                     help="specify a file to be sent. "
                         "specify multiple times to send multiple files. ")
+    ap.add_argument("--show-people", action="store_true", dest="show_people",
+                    help="specify to show information of the certain people. "
+                    "the --email-addrs option is required.")
     ap.add_argument("--config", "-c", action="store", dest="config",
                     help="NOTYET: specify the config file.")
     ap.add_argument("--update-config", action="store_true", dest="update_config",
@@ -130,10 +147,13 @@ def main():
         opt.room_id = os.environ.get("WEBEX_TEAMS_ROOM_ID", None)
 
     api = WebexTeamsAPI(access_token=opt.access_token)
-    if opt.show_room_list:
+    # peple
+    if opt.show_people:
+        people_show(api, email_addrs_list)
+    elif opt.show_room_list:
+    # room
         room_list(api)
-        exit(0)
-    if opt.room_id:
+    elif opt.room_id:
         if opt.show_members:
             member_show(api, opt.room_id, email_addrs_list)
         elif opt.add_members:
