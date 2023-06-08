@@ -44,7 +44,7 @@ def send_msg(
         message: Union[str,None] = None,
         files: Union[List,None] = None
         ) -> None:
-    if len(files) > 1:
+    if files is not None and len(files) > 1:
         raise NotImplementedError(
                 "ERROR: don't specify multiple files. "
                 "It currently doesn't support the feature "
