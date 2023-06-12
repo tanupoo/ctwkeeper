@@ -38,3 +38,7 @@ optional arguments:
   -d                    enable debug mode. (default: False)
 ```
 
+## References
+
+- https://developer.webex.com/docs/messaging
+
