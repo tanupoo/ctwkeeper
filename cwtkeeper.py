@@ -217,7 +217,7 @@ def main(argv):
                     "separated by a comma.")
     sap.set_defaults(func=member_functions)
     # message
-    sap = subp.add_parser("message", aliases=["mes", "msg", "mesg", "ms"],
+    sap = subp.add_parser("message", aliases=["mes", "ms"],
                           help="the message management.")
     sap.add_argument("--token", "-t", action="store", dest="access_token",
                      help="specify the access token.")
@@ -243,7 +243,7 @@ def main(argv):
                      help="specify the number of mails to be listed.")
     sap.set_defaults(func=message_functions)
     # people
-    sap = subp.add_parser("people", aliases=["peo", "ppl"],
+    sap = subp.add_parser("people", aliases=["peo", "pp"],
                           help="the people management. "
                           "ONLY FOR NON-ADMIN USERS.")
     sap.add_argument("--token", "-t", action="store", dest="access_token",
