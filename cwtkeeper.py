@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-from webexteamssdk import WebexTeamsAPI, exceptions, WebexTeamsDateTime
+import sys
 import os
 import json
-from argparse import ArgumentParser
+from webexteamssdk import WebexTeamsAPI, exceptions, WebexTeamsDateTime
+from argparse import ArgumentParser, BooleanOptionalAction
 
 """
 https://github.com/CiscoDevNet/webexteamssdk
@@ -19,11 +20,30 @@ def room_functions(opt, subp):
 
     api = WebexTeamsAPI(access_token=opt.access_token)
 
-    if opt.show_room_list:
+    if opt.show_list:
         # Find all rooms where the bot participates.
         for r in api.rooms.list():
             print(f"{r.title}: {r.id}")
-    elif opt.room_id:
+    if not opt.room_id:
+        subp.choices[opt.subcommand].print_help()
+        return
+
+    if opt.public:
+        title = api.rooms.get(opt.room_id).title
+        ret = api.rooms.update(roomId=opt.room_id, title=title,
+                               **{"isPublic": opt.public})
+        print(ret)
+    elif opt.update_info:
+        if opt.update_info == "stdin":
+            info = json.load(sys.stdin)
+        else:
+            info = json.load(open(opt.room_info))
+        title = info.get("title")
+        if title is None:
+            title = api.rooms.get(opt.room_id).title
+        ret = api.rooms.update(roomId=opt.room_id, title=title, **info)
+        print(ret)
+    else:
         ret = api.rooms.get(opt.room_id)
         print(ret)
 
@@ -190,9 +210,14 @@ def main(argv):
                      help="specify the access token.")
     sap.add_argument("--room-id", "-r", action="store", dest="room_id",
                      help="specify the room id.")
-    sap.add_argument("--list", "-l", action="store_true",
-                     dest="show_room_list",
-                     help="show the list of rooms.")
+    sap.add_argument("--list", "-l", action="store_true", dest="show_list",
+                     help="show the list of rooms joined.")
+    sap.add_argument("--update", "-u", action="store", dest="update_info",
+                     help="update a part of info of the room. "
+                     "the argument is like a dict.")
+    sap.add_argument("--public", action=BooleanOptionalAction,
+                     dest="public",
+                     help="make the room public or not. ")
     sap.set_defaults(func=room_functions)
     # membership
     sap = subp.add_parser("member", aliases=["mem", "mm"],
@@ -275,6 +300,5 @@ def main(argv):
 # main
 #
 if __name__ == "__main__" :
-    import sys
     main(sys.argv[1:])
 
