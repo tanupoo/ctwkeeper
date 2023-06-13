@@ -10,6 +10,14 @@ from argparse import ArgumentParser, BooleanOptionalAction
 https://github.com/CiscoDevNet/webexteamssdk
 """
 
+def make_list(string):
+    """make a list from a string that is a series of string separated by a
+    comma."""
+    if string is not None:
+        return [i for i in string.replace(" ","").split(",")]
+    else:
+        return []
+
 #
 # room management
 #
@@ -24,6 +32,9 @@ def room_functions(opt, subp):
         # Find all rooms where the bot participates.
         for r in api.rooms.list():
             print(f"{r.title}: {r.id}")
+        return
+
+    # others require a room id.
     if not opt.room_id:
         subp.choices[opt.subcommand].print_help()
         return
@@ -59,15 +70,13 @@ def member_functions(opt, subp):
         subp.choices[opt.subcommand].print_help()
         return
     # set the mail addrs.
-    opt.mail_addrs = []
-    if opt._mail_addrs:
-        opt.mail_addrs = [i for i in opt._mail_addrs.replace(" ","").split(",")]
+    mail_addrs = make_list(opt._mail_addrs)
 
     api = WebexTeamsAPI(access_token=opt.access_token)
 
     if opt.show_members:
-        if opt.mail_addrs:
-            for a in opt.mail_addrs:
+        if mail_addrs:
+            for a in mail_addrs:
                 for n in api.memberships.list(opt.room_id, personEmail=a):
                     print(f"MembershipId: {n.id}")
         else:
@@ -106,9 +115,7 @@ def message_functions(opt, subp):
     if opt.room_id is None:
         opt.room_id = os.environ.get("WEBEX_TEAMS_ROOM_ID", None)
     # set the mail addrs.
-    opt.mail_addrs = []
-    if opt._mail_addrs:
-        opt.mail_addrs = [i for i in opt._mail_addrs.replace(" ","").split(",")]
+    mail_addrs = make_list(opt._mail_addrs)
 
     api = WebexTeamsAPI(access_token=opt.access_token)
 
@@ -121,8 +128,8 @@ def message_functions(opt, subp):
         if opt.since:
             since_dt = WebexTeamsDateTime.strptime(opt.since)
         ret = None
-        if opt.mail_addrs:
-            for a in opt.mail_addrs:
+        if mail_addrs:
+            for a in mail_addrs:
                 ret = api.messages.list(roomId=opt.room_id,
                                         mentionedPeople=a)
                 for i,m in enumerate(ret):
@@ -141,6 +148,23 @@ def message_functions(opt, subp):
                 print(m)
                 if i + 1 >= opt.max_nb_mails:
                     break
+    elif opt.delete_messages:
+        message_ids = make_list(opt.delete_messages)
+        for m in message_ids:
+            try:
+                ret = api.messages.delete(m)
+            except exceptions.ApiError as e:
+                if "[404] Not Found" in str(e):
+                    print(f"Not Found: {m}")
+                else:
+                    print(str(e))
+            else:
+                print(f"{m} has been deleted.")
+    elif opt.get_messages:
+        message_ids = make_list(opt.get_messages)
+        for m in message_ids:
+            ret = api.messages.get(m)
+            print(ret)
     else:
         file_list = []
         if opt._files:
@@ -156,8 +180,8 @@ def message_functions(opt, subp):
             subp.choices[opt.subcommand].print_help()
             return
 
-        elif opt.mail_addrs:
-            for a in opt.mail_addrs:
+        elif mail_addrs:
+            for a in mail_addrs:
                 ret = api.messages.create(toPersonEmail=a,
                                           text=opt.message,
                                           files=file_list)
@@ -176,13 +200,11 @@ def message_functions(opt, subp):
 #
 def people_functions(opt, subp):
     # set the mail addrs.
-    opt.mail_addrs = []
-    if opt._mail_addrs:
-        opt.mail_addrs = [i for i in opt._mail_addrs.replace(" ","").split(",")]
+    mail_addrs = make_list(opt._mail_addrs)
 
     api = WebexTeamsAPI(access_token=opt.access_token)
 
-    for a in opt.mail_addrs:
+    for a in mail_addrs:
         for p in api.people.list(email=a):
             if opt.show_detail:
                 print(p)
@@ -257,6 +279,10 @@ def main(argv):
     sap.add_argument("--file", "-f", action="append", dest="_files", nargs="*",
                      help="specify a file to be sent. "
                         "specify multiple times to send multiple files. ")
+    sap.add_argument("--get", "-g", action="store", dest="get_messages",
+                     help="get messages.")
+    sap.add_argument("--delete", "-D", action="store", dest="delete_messages",
+                     help="delete messages.")
     sap.add_argument("--list", "-l", action="store_true", dest="show_messages",
                      help="list the messages.  "
                      "Either the --since option or the --max option is required.")
