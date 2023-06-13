@@ -244,8 +244,7 @@ def main(argv):
     sap.set_defaults(func=message_functions)
     # people
     sap = subp.add_parser("people", aliases=["peo", "pp"],
-                          help="the people management. "
-                          "ONLY FOR NON-ADMIN USERS.")
+                          help="the people management. ")
     sap.add_argument("--token", "-t", action="store", dest="access_token",
                     help="specify the access token.")
     sap.add_argument("--email-addrs", "-e", action="store", dest="_mail_addrs",
